@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>建立活動 — PayClub</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css"><script src="pc_auth.js"></script>
+<style>
+body{background:var(--bg);min-height:100vh;}
+.top-nav{background:var(--white);border-bottom:1px solid var(--border);padding:13px 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;box-shadow:var(--shadow);}
+.nav-back{display:inline-flex;align-items:center;gap:5px;color:var(--text2);font-size:0.84rem;font-weight:600;text-decoration:none;padding:6px 12px;border:1.5px solid var(--border);border-radius:8px;transition:all 0.15s;background:transparent;cursor:pointer;font-family:'Noto Sans TC',sans-serif;}
+.nav-back:hover{border-color:var(--border2);background:var(--surface);color:var(--text);}
+.nav-logo{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:1.15rem;color:var(--accent);display:flex;align-items:center;gap:7px;}
+.nav-right{display:flex;align-items:center;gap:10px;margin-left:auto;}
+.nav-avatar{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;}
+/* Steps */
+.steps-wrap{max-width:700px;margin:28px auto 0;padding:0 20px;}
+.steps{display:flex;align-items:center;width:100%;margin-bottom:24px;}
+.step-item{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.step-circle{width:30px;height:30px;border-radius:50%;border:2px solid var(--border);background:var(--white);display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:var(--text3);transition:all 0.25s;flex-shrink:0;}
+.step-item.active .step-circle{border-color:var(--accent);background:var(--accent);color:#fff;}
+.step-item.done .step-circle{border-color:var(--green);background:var(--green);color:#fff;}
+.step-label{font-size:0.82rem;font-weight:600;color:var(--text3);}
+.step-item.active .step-label{color:var(--accent);}
+.step-item.done .step-label{color:var(--green);}
+.step-line{flex:1;height:2px;background:var(--border);margin:0 10px;}
+.step-line.done{background:var(--green);}
+/* Form card */
+.form-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:28px;margin-bottom:16px;box-shadow:var(--shadow);}
+.form-card-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:1rem;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:8px;}
+.btn-row{display:flex;gap:10px;margin-top:4px;}
+/* Calendar date picker */
+.date-picker-wrap{position:relative;}
+.date-display{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;cursor:pointer;background:var(--white);transition:border-color 0.15s;user-select:none;}
+.date-display:hover{border-color:var(--accent);}
+.date-display.open{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-light);}
+.date-display-text{font-size:0.92rem;font-weight:600;color:var(--text);}
+.date-display-text.placeholder{color:var(--text3);font-weight:400;}
+.calendar-icon{color:var(--text3);font-size:1rem;}
+.calendar-popup{position:absolute;top:calc(100% + 6px);left:0;z-index:10000;background:var(--white);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.12);padding:16px;min-width:280px;display:none;}
+.calendar-popup.show{display:block;}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.cal-title-wrap{display:flex;align-items:center;gap:6px;}
+.cal-year-select{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:0.9rem;font-weight:700;color:var(--text);cursor:pointer;outline:none;transition:all 0.15s;}
+.cal-year-select:hover{border-color:var(--accent);background:var(--accent-light);}
+.cal-year-select:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-light);}
+#calMonthText{font-family:'Plus Jakarta Sans',sans-serif;font-size:0.95rem;font-weight:700;color:var(--text);}
+.cal-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:0.95rem;font-weight:700;color:var(--text);}
+.cal-nav{background:none;border:none;cursor:pointer;color:var(--text2);font-size:1.1rem;padding:4px 8px;border-radius:6px;transition:all 0.15s;}
+.cal-nav:hover{background:var(--surface);color:var(--text);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.cal-day-label{text-align:center;font-size:0.7rem;font-weight:700;color:var(--text3);padding:4px 0;}
+.cal-day{text-align:center;padding:7px 4px;border-radius:8px;font-size:0.84rem;cursor:pointer;transition:all 0.15s;color:var(--text);}
+.cal-day:hover:not(.disabled):not(.empty){background:var(--accent-light);color:var(--accent);}
+.cal-day.selected{background:var(--accent);color:#fff;font-weight:700;}
+.cal-day.today{font-weight:700;color:var(--accent);}
+.cal-day.disabled{color:var(--text3);cursor:default;opacity:0.4;}
+.cal-day.empty{cursor:default;}
+/* Chips */
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+.chip{padding:6px 14px;border-radius:100px;font-size:0.8rem;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--white);color:var(--text2);transition:all 0.15s;user-select:none;font-family:'Noto Sans TC',sans-serif;}
+.chip.selected{border-color:var(--accent);background:var(--accent-light);color:var(--accent);}
+/* Member stuff */
+.info-note{background:var(--accent-light);border:1px solid #c7d2fe;border-radius:8px;padding:10px 14px;font-size:0.8rem;color:var(--accent);line-height:1.6;margin-bottom:14px;}
+.member-add-row{display:grid;grid-template-columns:1fr auto;gap:10px;margin-bottom:12px;align-items:start;}
+.member-list{display:flex;flex-direction:column;gap:6px;}
+.member-tag{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;gap:8px;}
+.member-tag-left{display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap;}
+.m-av-sm{width:26px;height:26px;border-radius:50%;background:#4f6ef7;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:#fff;flex-shrink:0;}
+.m-email-text{font-size:0.84rem;font-weight:600;}
+.m-remove{background:none;border:none;color:var(--text3);cursor:pointer;font-size:1rem;flex-shrink:0;}
+.m-remove:hover{color:var(--red);}
+.role-chips{display:flex;gap:6px;flex-wrap:wrap;}
+.role-chip{padding:5px 13px;border-radius:100px;font-size:0.78rem;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--white);color:var(--text2);transition:all 0.15s;user-select:none;font-family:'Noto Sans TC',sans-serif;}
+.role-chip.sel-payer{border-color:var(--accent);background:var(--accent-light);color:var(--accent);}
+.role-chip.sel-counter{border-color:var(--orange);background:var(--orange-light);color:var(--orange);}
+.role-chip.sel-admin{border-color:var(--green);background:var(--green-light);color:var(--green);}
+/* Preview */
+.preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.prev-box{background:var(--surface);border-radius:9px;padding:12px 14px;}
+.prev-label{font-size:0.68rem;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px;}
+.prev-val{font-weight:700;font-size:0.9rem;color:var(--text);}
+.prev-table{width:100%;border-collapse:collapse;font-size:0.84rem;}
+.prev-table th{background:var(--surface);padding:8px 12px;text-align:left;font-size:0.72rem;color:var(--text2);font-weight:700;}
+.prev-table td{padding:8px 12px;border-bottom:1px solid var(--border);}
+.prev-table tr:last-child td{border-bottom:none;}
+/* Success */
+.success-box{background:var(--green-light);border:1px solid #bbf7d0;border-radius:var(--radius);padding:32px;text-align:center;}
+.invite-display{background:var(--white);border:2px dashed var(--accent);border-radius:12px;padding:16px 20px;margin:14px 0;cursor:pointer;transition:all 0.15s;}
+.invite-display:hover{background:var(--accent-light);}
+.invite-code-big{font-family:'Plus Jakarta Sans',sans-serif;font-size:2.2rem;font-weight:800;letter-spacing:0.18em;color:var(--accent);}
+.link-box{background:var(--white);border:1.5px solid var(--border);border-radius:9px;padding:11px 14px;display:flex;align-items:center;gap:10px;margin:10px 0;}
+.link-url{font-size:0.79rem;color:var(--accent);flex:1;word-break:break-all;}
+.copy-sm{background:var(--accent);color:#fff;border:none;padding:6px 13px;border-radius:7px;font-size:0.76rem;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',sans-serif;}
+.content-wrap{max-width:700px;margin:0 auto;padding:0 20px 40px;}
+</style>
+</head>
+<body>
+<nav class="top-nav">
+  <button class="nav-back" onclick="location.href='dashboard.html'">← 回總覽</button>
+  <div class="nav-logo"><div style="width:7px;height:7px;background:var(--accent);border-radius:50%;display:inline-block;margin-right:2px"></div>PayClub</div>
+</nav>
+
+<div class="steps-wrap">
+  <div class="steps">
+    <div class="step-item active" id="si1"><div class="step-circle">1</div><div class="step-label">活動資訊</div></div>
+    <div class="step-line" id="sl1"></div>
+    <div class="step-item" id="si2"><div class="step-circle">2</div><div class="step-label">成員設定</div></div>
+    <div class="step-line" id="sl2"></div>
+    <div class="step-item" id="si3"><div class="step-circle">3</div><div class="step-label">確認建立</div></div>
+  </div>
+</div>
+
+<div class="content-wrap">
+  <!-- STEP 1 -->
+  <div id="s1">
+    <div class="form-card">
+      <div class="form-card-title">📋 活動基本資訊</div>
+      <div class="form-group">
+        <label class="form-label">活動名稱 *</label>
+        <input type="text" id="s1Title" class="form-input" placeholder="例：2025 迎新活動費用" onkeydown="if(event.key==='Enter')goStep2()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">截止日期 *</label>
+        <div class="date-picker-wrap">
+          <div class="date-display" id="dateDisplay">
+            <span class="date-display-text placeholder" id="dateDisplayText">請選擇截止日期</span>
+            <span class="calendar-icon">📅</span>
+          </div>
+          <div class="calendar-popup" id="calendarPopup">
+            <div class="cal-header">
+              <button class="cal-nav">‹</button>
+              <div class="cal-title-wrap">
+                <select class="cal-year-select" id="calYearSelect"></select>
+                <span id="calMonthText"></span>
+              </div>
+              <button class="cal-nav">›</button>
+            </div>
+            <div class="cal-grid" id="calGrid"></div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">活動說明（選填）</label>
+        <textarea id="s1Desc" class="form-input" rows="2" placeholder="成員繳費時會看到這段說明..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">自動催款提醒</label>
+        <div class="chips">
+          <div class="chip selected" onclick="this.classList.toggle('selected')">截止前 7 天</div>
+          <div class="chip selected" onclick="this.classList.toggle('selected')">截止前 3 天</div>
+          <div class="chip selected" onclick="this.classList.toggle('selected')">截止前 1 天</div>
+          <div class="chip" onclick="this.classList.toggle('selected')">截止當天</div>
+        </div>
+      </div>
+    </div>
+    <div class="btn-row"><button class="btn btn-primary" style="flex:1;justify-content:center" onclick="goStep2()">下一步：設定成員 →</button></div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div id="s2" style="display:none">
+    <div class="form-card">
+      <div class="form-card-title">👥 預先邀請成員（選填）</div>
+      <div class="info-note">💡 預先邀請的成員會收到通知確認是否加入。確認前狀態為「未加入」。繳費者也可透過邀請碼自行申請。</div>
+      <div class="member-add-row">
+        <div>
+          <input type="email" id="addEmail" class="form-input" placeholder="member@email.com" onkeydown="if(event.key==='Enter')addMember()" style="margin-bottom:8px">
+          <div style="font-size:0.78rem;font-weight:600;color:var(--text2);margin-bottom:6px">選擇在此活動的角色（可多選）</div>
+          <div class="role-chips" id="roleChipsInput">
+            <div class="role-chip" data-role="payer" onclick="toggleRoleChip(this)">💳 繳費者</div>
+            <div class="role-chip" data-role="counter" onclick="toggleRoleChip(this)">📊 統計者</div>
+            <div class="role-chip" data-role="admin" onclick="toggleRoleChip(this)">👑 管理員</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="addMember()" style="align-self:flex-start;white-space:nowrap">＋ 新增</button>
+      </div>
+      <div class="member-list" id="memberList">
+        <div style="text-align:center;padding:16px;color:var(--text3);font-size:0.84rem">尚未預先邀請成員</div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="goStep(1)">← 上一步</button>
+      <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="goStep3()">下一步：確認建立 →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div id="s3" style="display:none">
+    <div class="form-card">
+      <div class="form-card-title">✅ 確認活動資訊</div>
+      <div class="preview-grid" id="previewInfo"></div>
+      <div style="font-size:0.78rem;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.04em">預先邀請成員</div>
+      <table class="prev-table"><thead><tr><th>Email</th><th>角色</th></tr></thead><tbody id="previewMembers"></tbody></table>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="goStep(2)">← 上一步</button>
+      <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="submitCreate()">🚀 建立活動</button>
+    </div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div id="sSuccess" style="display:none">
+    <div class="success-box">
+      <div style="font-size:2.2rem;margin-bottom:10px">🎉</div>
+      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:1.3rem;font-weight:800;margin-bottom:6px;color:var(--green)">活動建立成功！</div>
+      <div style="font-size:0.88rem;color:var(--text2);margin-bottom:4px">已通知預先邀請的成員確認加入</div>
+      <div class="invite-display" onclick="copyInviteCode()">
+        <div class="invite-code-big" id="inviteCodeDisp">——</div>
+        <div style="font-size:0.75rem;color:var(--text2);margin-top:5px">📋 點擊複製邀請碼</div>
+      </div>
+      <div style="font-size:0.78rem;color:var(--text2);margin-bottom:4px">或分享收款連結</div>
+      <div class="link-box">
+        <div class="link-url" id="generatedLink">—</div>
+        <button class="copy-sm" onclick="copyLink()">複製</button>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
+        <button class="btn btn-ghost" onclick="location.href='dashboard.html'">回總覽</button>
+        <button class="btn btn-primary" onclick="goToEvent()">查看活動 →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+
+  
+// ── Calendar ──
+let calYear, calMonth, selectedDate = null;
+
+function initCalendar() {
+  const def = new Date(); def.setDate(def.getDate() + 14);
+  calYear = def.getFullYear(); calMonth = def.getMonth();
+  renderCalendar();
+  
+  // 使用事件委派綁定所有日曆事件
+  const dateDisplay = document.getElementById('dateDisplay');
+  const calendarPopup = document.getElementById('calendarPopup');
+  const calGrid = document.getElementById('calGrid');
+  
+  // 點擊觸發按鈕
+  dateDisplay.addEventListener('click', function(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    toggleCalendar();
+  });
+  
+  // 點擊日曆內的日期（事件委派）
+  calGrid.addEventListener('click', function(e) {
+    const dayEl = e.target.closest('.cal-day');
+    if (dayEl && !dayEl.classList.contains('disabled') && !dayEl.classList.contains('empty')) {
+      const y = parseInt(dayEl.dataset.year);
+      const m = parseInt(dayEl.dataset.month);
+      const d = parseInt(dayEl.dataset.day);
+      if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+        selectDate(y, m, d);
+      }
+    }
+  });
+  
+  // 月份導航按鈕
+  const prevBtn = calendarPopup.querySelector('.cal-nav:first-child');
+  const nextBtn = calendarPopup.querySelector('.cal-nav:last-child');
+  
+  if (prevBtn) {
+    prevBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      calNav(-1);
+    });
+  }
+  
+  if (nextBtn) {
+    nextBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      calNav(1);
+    });
+  }
+  
+  // 年份選擇器
+  const yearSelect = document.getElementById('calYearSelect');
+  if (yearSelect) {
+    // 填充年份選項
+    populateYearSelect();
+    
+    yearSelect.addEventListener('change', function(e) {
+      e.stopPropagation();
+      calYear = parseInt(this.value);
+      renderCalendar();
+    });
+  }
+  
+  // 全域點擊監聽（關閉日曆）
+  document.addEventListener('click', function(e) {
+    if (calendarPopup.classList.contains('show')) {
+      if (!calendarPopup.contains(e.target) && !dateDisplay.contains(e.target)) {
+        calendarPopup.classList.remove('show');
+        dateDisplay.classList.remove('open');
+      }
+    }
+  });
+}
+
+function populateYearSelect() {
+  const yearSelect = document.getElementById('calYearSelect');
+  if (!yearSelect) return;
+  
+  const currentYear = new Date().getFullYear();
+  const startYear = currentYear;
+  const endYear = currentYear + 10; // 未來10年
+  
+  let html = '';
+  for (let y = startYear; y <= endYear; y++) {
+    html += `<option value="${y}" ${y === calYear ? 'selected' : ''}>${y}</option>`;
+  }
+  yearSelect.innerHTML = html;
+}
+
+function toggleCalendar() {
+  const popup = document.getElementById('calendarPopup');
+  const disp = document.getElementById('dateDisplay');
+  popup.classList.toggle('show');
+  disp.classList.toggle('open');
+}
+
+function calNav(dir) {
+  calMonth += dir;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  
+  // 更新月份顯示
+  const monthText = document.getElementById('calMonthText');
+  if (monthText) {
+    monthText.textContent = months[calMonth];
+  }
+  
+  // 同步年份選擇器
+  const yearSelect = document.getElementById('calYearSelect');
+  if (yearSelect) {
+    yearSelect.value = calYear;
+  }
+  
+  const grid = document.getElementById('calGrid');
+  const days = ['日','一','二','三','四','五','六'];
+  let html = days.map(d => `<div class="cal-day-label">${d}</div>`).join('');
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+  
+  for (let i = 0; i < firstDay; i++) {
+    html += `<div class="cal-day empty"></div>`;
+  }
+  
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(calYear, calMonth, d);
+    const isPast = date < today;
+    const isToday = date.toDateString() === today.toDateString();
+    const isSelected = selectedDate && date.toDateString() === selectedDate.toDateString();
+    let cls = 'cal-day';
+    if (isPast) cls += ' disabled';
+    if (isToday) cls += ' today';
+    if (isSelected) cls += ' selected';
+    
+    // 使用 data attributes 而不是 inline onclick
+    html += `<div class="${cls}" data-year="${calYear}" data-month="${calMonth}" data-day="${d}">${d}</div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function selectDate(y, m, d) {
+  selectedDate = new Date(y, m, d);
+  const months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  const txt = document.getElementById('dateDisplayText');
+  txt.textContent = y + '年 ' + months[m] + ' ' + d + '日';
+  txt.classList.remove('placeholder');
+  renderCalendar();
+  
+  // 關閉彈窗
+  document.getElementById('calendarPopup').classList.remove('show');
+  document.getElementById('dateDisplay').classList.remove('open');
+}
+
+function getSelectedDateStr() {
+  if (!selectedDate) return null;
+  const y = selectedDate.getFullYear();
+  const m = String(selectedDate.getMonth() + 1).padStart(2, '0');
+  const d = String(selectedDate.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+// ── Steps ──
+function goStep(n) {
+  [1,2,3].forEach(i => {
+    document.getElementById('s'+i).style.display = i===n ? 'block' : 'none';
+    document.getElementById('si'+i).className = 'step-item' + (i<n?' done':i===n?' active':'');
+    if(i<3) document.getElementById('sl'+i).className = 'step-line' + (i<n?' done':'');
+  });
+  document.getElementById('sSuccess').style.display = 'none';
+}
+function goStep2() {
+  const title = document.getElementById('s1Title').value.trim();
+  if (!title) { PC_toast('請填寫活動名稱'); document.getElementById('s1Title').focus(); return; }
+  if (!selectedDate) { PC_toast('請選擇截止日期'); return; }
+  goStep(2);
+}
+function goStep3() {
+  const dl = getSelectedDateStr();
+  const title = document.getElementById('s1Title').value.trim();
+  const months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  const dlDisplay = selectedDate ? selectedDate.getFullYear()+'年 '+months[selectedDate.getMonth()]+' '+selectedDate.getDate()+'日' : '';
+  document.getElementById('previewInfo').innerHTML = `
+    <div class="prev-box"><div class="prev-label">活動名稱</div><div class="prev-val">${title}</div></div>
+    <div class="prev-box"><div class="prev-label">截止日期</div><div class="prev-val">${dlDisplay}</div></div>
+    <div class="prev-box"><div class="prev-label">預先邀請</div><div class="prev-val">${members.length} 人</div></div>
+    <div class="prev-box"><div class="prev-label">收款金額</div><div class="prev-val" style="color:var(--accent)">建立後在活動頁設定</div></div>`;
+  document.getElementById('previewMembers').innerHTML = members.length
+    ? members.map(m => `<tr><td>${m.email}</td><td>${m.roles.map(r=>`<span class="badge ${ROLE_BADGE[r]}" style="font-size:0.7rem;margin-right:3px">${ROLE_LABELS[r]}</span>`).join('')}</td></tr>`).join('')
+    : '<tr><td colspan="2" style="color:var(--text3);text-align:center">無</td></tr>';
+  goStep(3);
+}
+
+// ── Roles ──
+const ROLE_SEL = {payer:'sel-payer',counter:'sel-counter',admin:'sel-admin'};
+// ROLE_LABELS 和 ROLE_BADGE 已在 pc_auth.js 中定義
+function toggleRoleChip(el) { const cls=ROLE_SEL[el.dataset.role]; if(cls) el.classList.toggle(cls); }
+function getSelectedRoles() { return Array.from(document.querySelectorAll('#roleChipsInput .role-chip')).filter(el=>Object.values(ROLE_SEL).some(c=>el.classList.contains(c))).map(el=>el.dataset.role); }
+
+// ── Members ──
+let members = [];
+function addMember() {
+  const email = document.getElementById('addEmail').value.trim();
+  const roles = getSelectedRoles();
+  if (!email || !email.includes('@')) { PC_toast('請輸入有效 Email'); return; }
+  if (!roles.length) { PC_toast('請至少選擇一個角色'); return; }
+  if (members.find(m => m.email === email)) { PC_toast('此 Email 已新增'); return; }
+  members.push({email, name:email.split('@')[0], roles, role:roles[0]});
+  document.getElementById('addEmail').value = '';
+  document.querySelectorAll('#roleChipsInput .role-chip').forEach(el => { Object.values(ROLE_SEL).forEach(c => el.classList.remove(c)); });
+  renderMemberList();
+}
+function removeMember(i) { members.splice(i,1); renderMemberList(); }
+function renderMemberList() {
+  const list = document.getElementById('memberList');
+  if (!members.length) { list.innerHTML='<div style="text-align:center;padding:16px;color:var(--text3);font-size:0.84rem">尚未預先邀請成員</div>'; return; }
+  list.innerHTML = members.map((m,i) => `<div class="member-tag"><div class="member-tag-left"><div class="m-av-sm">${m.email.slice(0,1).toUpperCase()}</div><div class="m-email-text">${m.email}</div>${m.roles.map(r=>`<span class="badge ${ROLE_BADGE[r]}" style="font-size:0.68rem">${ROLE_LABELS[r]}</span>`).join('')}<span class="badge badge-orange" style="font-size:0.68rem">未加入</span></div><button class="m-remove" onclick="removeMember(${i})">✕</button></div>`).join('');
+}
+
+// ── Submit ──
+let createdId = null, createdCode = '';
+function submitCreate() {
+  const title = document.getElementById('s1Title').value.trim();
+  const dl = getSelectedDateStr();
+  const desc = document.getElementById('s1Desc').value.trim();
+  const code = PC_genInviteCode(); createdId = 'e'+Date.now(); createdCode = code;
+  const memberList = members.map(m => ({email:m.email,name:m.name,roles:m.roles,role:m.roles[0],status:'pending_invite',paidAt:'',customAmount:null,txId:'',remark:'',payMethod:'',txHistory:[]}));
+  const newEvt = {id:createdId,title,ownerEmail:user.email,amountMode:'per_person',amount:0,deadline:dl,desc,status:'active',inviteCode:code,members:memberList};
+  const evts = PC_getEvents(); evts.unshift(newEvt); PC_saveEvents(evts);
+  memberList.forEach(m => { PC_sendNotify(m.email,'活動邀請確認 🎫',`「${title}」的管理員邀請你以【${m.roles.map(r=>ROLE_LABELS[r]).join('、')}】身份加入。`,'invite'); });
+  document.getElementById('inviteCodeDisp').textContent = code;
+  document.getElementById('generatedLink').textContent = location.href.replace('create.html','pay.html')+'?event='+createdId;
+  [1,2,3].forEach(i => document.getElementById('s'+i).style.display='none');
+  document.getElementById('sSuccess').style.display = 'block';
+}
+function copyInviteCode() { PC_copyText(createdCode,'🔑 邀請碼已複製：'+createdCode); }
+function copyLink() { PC_copyText(document.getElementById('generatedLink').textContent,'🔗 連結已複製'); }
+function goToEvent() { location.href='event.html?id='+createdId; }
+
+// 驗證登入狀態
+const user = PC_requireLogin();
+if (!user) throw new Error('Require login');
+
+initCalendar();
+</script>
+</body></html>

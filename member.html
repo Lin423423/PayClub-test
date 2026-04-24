@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>加入活動 — PayClub</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css"><script src="pc_auth.js"></script>
+<style>
+body{background:var(--bg);min-height:100vh;}
+.member-nav{background:var(--white);border-bottom:1px solid var(--border);padding:13px 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;box-shadow:var(--shadow);}
+.nav-back{display:inline-flex;align-items:center;gap:5px;color:var(--text2);font-size:0.84rem;font-weight:600;text-decoration:none;padding:6px 12px;border:1.5px solid var(--border);border-radius:8px;transition:all 0.15s;background:transparent;cursor:pointer;font-family:'Noto Sans TC',sans-serif;}
+.nav-back:hover{border-color:var(--border2);background:var(--surface);color:var(--text);}
+.nav-logo{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:1.15rem;color:var(--accent);display:flex;align-items:center;gap:7px;}
+.nav-right{display:flex;align-items:center;gap:10px;margin-left:auto;}
+.nav-avatar{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;}
+.content{max-width:720px;margin:0 auto;padding:28px 20px;}
+.invite-section{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);margin-bottom:22px;}
+.invite-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:1rem;font-weight:800;margin-bottom:5px;}
+.invite-sub{color:var(--text2);font-size:0.84rem;margin-bottom:16px;line-height:1.6;}
+.invite-row{display:flex;gap:10px;}
+.invite-input{flex:1;background:var(--white);border:1.5px solid var(--border);border-radius:9px;padding:11px 16px;font-size:0.95rem;font-family:'Noto Sans TC',sans-serif;color:var(--text);outline:none;letter-spacing:0.1em;text-transform:uppercase;font-weight:700;}
+.invite-input:focus{border-color:var(--accent);}
+.invite-input::placeholder{letter-spacing:0;font-weight:400;text-transform:none;}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+.section-title{font-size:0.9rem;font-weight:700;}
+.event-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;box-shadow:var(--shadow);overflow:hidden;cursor:pointer;transition:all 0.15s;}
+.event-card:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:0 4px 14px rgba(79,110,247,0.08);}
+.event-card.no-click{cursor:default;}
+.event-card.no-click:hover{border-color:var(--border);transform:none;box-shadow:var(--shadow);}
+.ec-main{padding:18px 20px;}
+.ec-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+.ec-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:1rem;font-weight:700;}
+.ec-badges{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.ec-meta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;}
+.ec-meta span{font-size:0.78rem;color:var(--text2);}
+.ec-summary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.sum-box{background:var(--surface);border-radius:8px;padding:10px 12px;text-align:center;}
+.sum-label{font-size:0.68rem;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px;}
+.sum-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:1rem;font-weight:700;}
+.ec-footer{padding:10px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;}
+.leave-btn-sm{background:none;border:none;color:var(--text3);font-size:0.76rem;cursor:pointer;font-family:'Noto Sans TC',sans-serif;}
+.leave-btn-sm:hover{color:var(--red);}
+.pending-box{background:var(--orange-light);border:1px solid #fed7aa;border-radius:9px;padding:12px 14px;font-size:0.84rem;color:var(--orange);}
+.rejected-box{background:var(--red-light);border:1px solid #fecaca;border-radius:9px;padding:12px 14px;font-size:0.84rem;color:var(--red);}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);backdrop-filter:blur(3px);z-index:200;display:none;align-items:center;justify-content:center;padding:16px;}
+.overlay.show{display:flex;}
+.modal{background:var(--white);border-radius:16px;padding:26px;width:100%;max-width:440px;box-shadow:0 24px 64px rgba(0,0,0,0.15);animation:slideUp 0.22s ease;}
+@keyframes slideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.modal-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:1.1rem;font-weight:800;margin-bottom:8px;}
+.modal-sub{font-size:0.84rem;color:var(--text2);margin-bottom:18px;line-height:1.6;}
+.modal-actions{display:flex;gap:8px;margin-top:18px;}
+.invite-confirm-box{background:var(--accent-light);border:1px solid #c7d2fe;border-radius:10px;padding:14px 16px;margin-bottom:14px;}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text2);}
+@media(max-width:480px){.ec-summary{grid-template-columns:1fr 1fr;}.invite-row{flex-direction:column;}}
+</style>
+</head>
+<body>
+<nav class="member-nav">
+  <button class="nav-back" onclick="location.href='dashboard.html'">← 回總覽</button>
+  <div class="nav-logo"><div style="width:7px;height:7px;background:var(--accent);border-radius:50%;display:inline-block;margin-right:2px"></div>PayClub</div>
+</nav>
+
+<div class="content">
+  <div class="invite-section">
+    <div class="invite-title">🔑 輸入活動邀請碼</div>
+    <div class="invite-sub">向活動管理員索取 8 位邀請碼，輸入後送出申請。管理員審核通過後直接進入活動頁面。</div>
+    <div class="invite-row">
+      <input type="text" id="inviteInput" class="invite-input" placeholder="例：ABC12345" maxlength="8" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')joinEvent()">
+      <button class="btn btn-primary" onclick="joinEvent()">加入活動</button>
+    </div>
+    <div id="inviteErr" style="color:var(--red);font-size:0.78rem;margin-top:8px;display:none;"></div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-title" id="joinedTitle" style="display:none">我加入的活動</div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-ghost" onclick="refreshAll()" id="refreshBtn" style="display:none;font-size:0.8rem;padding:6px 12px">🔄 更新狀態</button>
+      <button class="btn btn-danger" onclick="removeAllDeleted()" id="removeDeletedBtn" style="display:none;font-size:0.8rem;padding:6px 12px">🗑 一鍵移除已刪除</button>
+    </div>
+  </div>
+  <div id="joinedEvents"></div>
+  <div class="empty-state" id="emptyState">
+    <div style="font-size:2.5rem;margin-bottom:12px;opacity:0.4">🎫</div>
+    <p>尚未加入任何活動<br>輸入邀請碼開始！</p>
+  </div>
+</div>
+
+<!-- Invite confirm modal -->
+<div class="overlay" id="inviteConfirmOverlay">
+  <div class="modal">
+    <div class="modal-title">🎫 活動邀請確認</div>
+    <div class="invite-confirm-box" id="inviteConfirmInfo"></div>
+    <div class="modal-sub">請確認是否同意以上述角色加入此活動？</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="flex:1" onclick="rejectInvite()">拒絕邀請</button>
+      <button class="btn btn-primary" style="flex:2" onclick="acceptInvite()">✓ 同意加入</button>
+    </div>
+  </div>
+</div>
+
+<!-- 退出活動確認彈窗 -->
+<div class="overlay" id="leaveOverlay">
+  <div class="modal" style="max-width:400px;text-align:center;">
+    <div style="font-size:3rem;margin-bottom:12px">⚠️</div>
+    <div class="modal-title">確定退出活動？</div>
+    <div class="modal-sub" id="leaveEventTitle" style="font-weight:600;color:var(--accent)"></div>
+    <div style="background:var(--red-light);border:1px solid #fecaca;border-radius:10px;padding:12px;font-size:0.82rem;color:var(--red);margin-bottom:18px;">退出後將無法查看活動資訊，如需重新加入需再次申請。</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeLeaveModal()">取消</button>
+      <button class="btn btn-danger" style="flex:2" onclick="confirmLeave()">確認退出</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+// 初始化用戶
+const user = PC_requireLogin();
+if (!user) throw new Error('Require login');
+
+function getMemberJoined(){return JSON.parse(localStorage.getItem('pc_member_joined__'+user.email)||'[]');}
+function saveMemberJoined(e){localStorage.setItem('pc_member_joined__'+user.email,JSON.stringify(e));}
+let pendingInviteData=null;
+
+function checkPendingInvites(){
+  for(let i=0;i<localStorage.length;i++){
+    const key=localStorage.key(i);
+    if(key&&key.startsWith('pc_events__')){
+      try{
+        const evts=JSON.parse(localStorage.getItem(key)||'[]');
+        evts.forEach(e=>{
+          const myM=(e.members||[]).find(m=>m.email===user.email&&m.status==='pending_invite');
+          const joined=getMemberJoined();
+          if(myM&&!joined.find(j=>j.eventId===e.id)){
+            pendingInviteData={event:e,ownerKey:key,member:myM};
+            showInviteConfirm(e,myM);
+          }
+        });
+      }catch(err){}
+    }
+  }
+}
+function showInviteConfirm(e,m){
+  const roles=Array.isArray(m.roles)?m.roles:(m.role?[m.role]:[]);
+  const RL={payer:'繳費者',counter:'統計者',admin:'管理員'};
+  document.getElementById('inviteConfirmInfo').innerHTML=`
+    <div style="font-size:0.9rem;font-weight:700;margin-bottom:6px">${e.title}</div>
+    <div style="font-size:0.8rem;color:var(--text2);margin-bottom:6px">截止日期：${e.deadline}</div>
+    <div style="font-size:0.8rem;color:var(--text2)">邀請角色：${roles.map(r=>`<span class="badge badge-blue" style="font-size:0.7rem">${RL[r]||r}</span>`).join(' ')}</div>`;
+  document.getElementById('inviteConfirmOverlay').classList.add('show');
+}
+function acceptInvite(){
+  if(!pendingInviteData)return;
+  const{event:e,ownerKey,member:m}=pendingInviteData;
+  const evts=JSON.parse(localStorage.getItem(ownerKey)||'[]');
+  const ev=evts.find(x=>x.id===e.id);
+  if(ev){
+    const myM=(ev.members||[]).find(x=>x.email===user.email);
+    if(myM){
+      const roles=Array.isArray(m.roles)?m.roles:(m.role?[m.role]:[]);
+      myM.status=roles.includes('payer')?'pending':'none';
+    }
+    localStorage.setItem(ownerKey,JSON.stringify(evts));
+  }
+  const joined=getMemberJoined();
+  joined.push({eventId:e.id,eventTitle:e.title,ownerKey,joinedAt:new Date().toISOString()});
+  saveMemberJoined(joined);
+  PC_sendNotify(e.ownerEmail||'','成員已確認加入 ✅',`${user.name}(${user.email}) 已確認加入「${e.title}」。`,'success');
+  document.getElementById('inviteConfirmOverlay').classList.remove('show');
+  pendingInviteData=null;
+  renderJoined();PC_toast('✅ 已加入「'+e.title+'」');
+  // Go directly to event
+  setTimeout(()=>location.href='event.html?id='+e.id, 800);
+}
+function rejectInvite(){
+  document.getElementById('inviteConfirmOverlay').classList.remove('show');
+  pendingInviteData=null;PC_toast('已拒絕邀請');
+}
+document.getElementById('inviteConfirmOverlay').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
+
+function joinEvent(){
+  const code=document.getElementById('inviteInput').value.trim().toUpperCase();
+  const errEl=document.getElementById('inviteErr');
+  if(code.length<4){errEl.textContent='請輸入邀請碼';errEl.style.display='block';return;}
+  const result=PC_findEventByCode(code);
+  if(!result){errEl.textContent='找不到此邀請碼，請確認後重試';errEl.style.display='block';return;}
+  errEl.style.display='none';
+
+  // ── 封鎖檢查（最優先，以 pc_blocked__ 為唯一依據）──
+  const blockKey='pc_blocked__'+result.event.id;
+  const blockedList=JSON.parse(localStorage.getItem(blockKey)||'[]');
+  if(blockedList.find(b=>b.email===user.email)){
+    errEl.textContent='🚫 你已被此活動的發起人封鎖，須等管理員解除封鎖後才可再次申請';
+    errEl.style.display='block';
+    return;
+  }
+
+  // ── 被拒絕可以重新申請 ──
+  const allReqs=PC_getJoinRequests(result.event.id);
+  const myPrevReq=allReqs.find(r=>r.email===user.email);
+  if(myPrevReq&&myPrevReq.status==='rejected'){
+    myPrevReq.status='pending';
+    myPrevReq.requestedAt=new Date().toISOString();
+    PC_saveJoinRequests(result.event.id, allReqs);
+    localStorage.removeItem('pc_reject_notif__'+result.event.id+'__'+user.email);
+    // 確保加入 joined 列表
+    const joinedNow=getMemberJoined();
+    if(!joinedNow.find(j=>j.eventId===result.event.id)){
+      joinedNow.push({eventId:result.event.id,eventTitle:result.event.title,ownerKey:result.ownerKey,joinedAt:new Date().toISOString()});
+      saveMemberJoined(joinedNow);
+    }
+    const ownerEmail=result.ownerKey.replace('pc_events__','');
+    PC_sendNotify(ownerEmail,'重新申請加入 👥',`${user.name}(${user.email}) 重新申請加入「${result.event.title}」，請前往活動頁面審核。`,'info');
+    document.getElementById('inviteInput').value='';
+    PC_toast('✅ 已重新送出申請，等待管理員審核');
+    renderJoined();
+    return;
+  }
+
+  // ── 已在 joined 列表中 ──
+  const joined=getMemberJoined();
+  if(joined.find(j=>j.eventId===result.event.id)){PC_toast('你已加入此活動');return;}
+
+  // ── 申請已送出等待審核 ──
+  const alreadyReq=allReqs.find(r=>r.email===user.email&&r.status==='pending');
+  if(alreadyReq){PC_toast('申請已送出，等待審核');return;}
+
+  // ── 正常送出申請 ──
+  allReqs.push({email:user.email,name:user.name,requestedAt:new Date().toISOString(),status:'pending'});
+  PC_saveJoinRequests(result.event.id,allReqs);
+  joined.push({eventId:result.event.id,eventTitle:result.event.title,ownerKey:result.ownerKey,joinedAt:new Date().toISOString()});
+  saveMemberJoined(joined);
+  document.getElementById('inviteInput').value='';
+  const ownerEmail=result.ownerKey.replace('pc_events__','');
+  PC_sendNotify(ownerEmail,'新加入申請 👥',`${user.name}(${user.email}) 申請加入「${result.event.title}」，請前往活動頁面審核。`,'info');
+  PC_toast('✅ 申請已送出！等待管理員審核');
+  renderJoined();
+}
+
+function refreshAll(){renderJoined();PC_toast('✅ 狀態已更新');}
+function removeAllDeleted(){
+  const joined=getMemberJoined();
+  const kept=joined.filter(j=>!!PC_findEventById(j.eventId));
+  const removed=joined.length-kept.length;
+  if(!removed){PC_toast('沒有已刪除的活動');return;}
+  saveMemberJoined(kept);renderJoined();PC_toast('已移除 '+removed+' 個已刪除活動記錄');
+}
+
+function renderJoined(){
+  // ── 自動處理被拒絕的活動（被封鎖改為保留顯示）──
+  let joined=getMemberJoined();
+  let changed=false;
+
+  joined=joined.map((j)=>{
+    const result=PC_findEventById(j.eventId);
+    if(!result) return j; // 活動已刪除，保留
+
+    // 同步封鎖狀態：若 pc_blocked__ 有記錄 → 標記 blocked:true
+    const blockedList=JSON.parse(localStorage.getItem('pc_blocked__'+j.eventId)||'[]');
+    const isBlocked=!!blockedList.find(b=>b.email===user.email);
+    if(isBlocked && !j.blocked){
+      j.blocked=true;
+      changed=true;
+      // 發封鎖通知（只發一次）
+      const flagKey='pc_block_notif__'+j.eventId+'__'+user.email;
+      if(!localStorage.getItem(flagKey)){
+        PC_sendNotify(user.email,'你已被封鎖 🚫',`你已被「${result.event.title}」的活動發起人封鎖。如需解除封鎖，請聯繫活動管理員。`,'warning');
+        localStorage.setItem(flagKey,'1');
+      }
+    }
+    if(!isBlocked && j.blocked){
+      // 已解封，清除標記
+      j.blocked=false;
+      changed=true;
+    }
+    return j;
+  });
+
+  // 被拒絕 → 自動移除（可重新申請）
+  joined=joined.filter((j)=>{
+    const result=PC_findEventById(j.eventId);
+    if(!result||j.blocked) return true; // 活動已刪除或封鎖中，保留
+    const reqs=PC_getJoinRequests(j.eventId);
+    const myReq=reqs.find(r=>r.email===user.email);
+    if(myReq&&myReq.status==='rejected'){
+      const flagKey='pc_reject_notif__'+j.eventId+'__'+user.email;
+      if(!localStorage.getItem(flagKey)){
+        PC_sendNotify(user.email,'申請已被拒絕 ❌',`你加入「${result.event.title}」的申請已被拒絕，已自動退出活動。你可以重新輸入邀請碼再次申請。`,'warning');
+        localStorage.setItem(flagKey,'1');
+      }
+      changed=true;
+      return false;
+    }
+    return true;
+  });
+
+  if(changed) saveMemberJoined(joined);
+
+  const emptyEl=document.getElementById('emptyState');
+  const titleEl=document.getElementById('joinedTitle');
+  const container=document.getElementById('joinedEvents');
+  if(!joined.length){emptyEl.style.display='block';titleEl.style.display='none';document.getElementById('refreshBtn').style.display='none';document.getElementById('removeDeletedBtn').style.display='none';container.innerHTML='';return;}
+  emptyEl.style.display='none';titleEl.style.display='block';
+  document.getElementById('refreshBtn').style.display='inline-flex';
+  const hasDeleted=joined.some(j=>!PC_findEventById(j.eventId));
+  document.getElementById('removeDeletedBtn').style.display=hasDeleted?'inline-flex':'none';
+
+  container.innerHTML=joined.map((j,ji)=>{
+    // 被封鎖的活動：顯示封鎖提示卡片
+    if(j.blocked){
+      const result=PC_findEventById(j.eventId);
+      const title=result?result.event.title:j.eventTitle;
+      return `<div class="event-card no-click" style="border-color:#fecaca;">
+        <div class="ec-main">
+          <div class="ec-header">
+            <div class="ec-title" style="color:var(--text2)">${title}</div>
+            <span class="badge badge-red">已封鎖</span>
+          </div>
+          <div style="background:var(--red-light);border:1px solid #fecaca;border-radius:8px;padding:10px 14px;margin-top:8px;font-size:0.84rem;color:var(--red);">
+            🚫 你已被此活動的發起人封鎖，須等管理員解除封鎖後才可重新申請。
+          </div>
+        </div>
+      </div>`;
+    }
+
+    const reqs=PC_getJoinRequests(j.eventId);
+    const myReq=reqs.find(r=>r.email===user.email);
+    const approved=myReq&&myReq.status==='approved';
+    const rejected=myReq&&myReq.status==='rejected';
+    const result=PC_findEventById(j.eventId);
+    const evt=result?result.event:null;
+    if(!evt)return`<div class="event-card no-click"><div class="ec-main"><div style="color:var(--text3);display:flex;justify-content:space-between;align-items:center;font-size:0.84rem;">活動「${j.eventTitle}」已被刪除<button onclick="leaveEvent(event,${ji})" style="color:var(--red);background:none;border:none;cursor:pointer;font-family:inherit;font-size:0.8rem">移除</button></div></div></div>`;
+
+    const myMember=(evt.members||[]).find(m=>m.email===user.email);
+    const isPendingInvite=myMember&&myMember.status==='pending_invite';
+    const canEnter=(approved||myMember)&&!isPendingInvite&&!rejected;
+    const payers=PC_getPayers(evt);
+    const paid=payers.filter(m=>m.status==='paid').length;
+    const pct=payers.length?Math.round(paid/payers.length*100):0;
+    const dl=new Date(evt.deadline),days=Math.ceil((dl-new Date())/86400000);
+    const tagCls=evt.status==='active'?'badge-green':'badge-gray';
+    const RL={payer:'繳費者',counter:'統計者',admin:'管理員'};
+
+    let statusBadge='';
+    if(isPendingInvite)statusBadge='<span class="badge badge-orange">待確認邀請</span>';
+    else if(!myReq&&!myMember)statusBadge='<span class="badge badge-orange">審核中</span>';
+    else if(rejected)statusBadge='<span class="badge badge-red">已拒絕</span>';
+    else if(myMember){
+      const roles=Array.isArray(myMember.roles)?myMember.roles:(myMember.role?[myMember.role]:[]);
+      statusBadge=roles.map(r=>`<span class="badge badge-blue" style="font-size:0.7rem">${RL[r]||r}</span>`).join('');
+    }
+
+    // Direct click to event.html
+    const clickHandler=canEnter?`location.href='event.html?id=${evt.id}'`:'';
+
+    return `<div class="${canEnter?'event-card':'event-card no-click'}" onclick="${clickHandler}">
+      <div class="ec-main">
+        <div class="ec-header">
+          <div class="ec-title">${evt.title}</div>
+          <div class="ec-badges">${statusBadge}<span class="badge ${tagCls}">${evt.status==='active'?'進行中':'已結束'}</span></div>
+        </div>
+        <div class="ec-meta"><span>📅 截止：${evt.deadline}${days>0?' (剩'+days+'天)':' (已截止)'}</span><span>👥 ${payers.length} 位繳費成員</span></div>
+        ${isPendingInvite?`<div class="pending-box">📩 管理員邀請你加入，請確認是否同意。<button class="btn btn-primary" style="margin-left:10px;padding:4px 12px;font-size:0.78rem" onclick="event.stopPropagation();checkPendingInvites()">查看邀請</button></div>`:
+          rejected?`<div class="rejected-box">❌ 申請已被拒絕，請聯繫活動管理員。</div>`:
+          !myMember&&!approved?`<div class="pending-box">⏳ 申請已送出，等待管理員審核通過後可進入活動。</div>`:
+          `<div class="ec-summary">
+            <div class="sum-box"><div class="sum-label">繳費率</div><div class="sum-val" style="color:var(--accent)">${pct}%</div></div>
+            <div class="sum-box"><div class="sum-label">已繳</div><div class="sum-val">${paid}/${payers.length}</div></div>
+            <div class="sum-box"><div class="sum-label">截止倒數</div><div class="sum-val" style="${days<=3?'color:var(--red)':''}">${days>0?days+'天':'已到期'}</div></div>
+          </div>`}
+      </div>
+      <div class="ec-footer"><button class="leave-btn-sm" onclick="leaveEvent(event,${ji})">退出活動</button></div>
+    </div>`;
+  }).join('');
+}
+
+let leaveEventIndex = -1;
+
+function leaveEvent(e, idx) {
+  e.stopPropagation();
+  const joined = getMemberJoined();
+  leaveEventIndex = idx;
+  document.getElementById('leaveEventTitle').textContent = joined[idx].eventTitle;
+  document.getElementById('leaveOverlay').classList.add('show');
+}
+
+function closeLeaveModal() {
+  document.getElementById('leaveOverlay').classList.remove('show');
+  leaveEventIndex = -1;
+}
+
+function confirmLeave() {
+  if (leaveEventIndex < 0) return;
+  
+  const joined = getMemberJoined();
+  const eventData = joined[leaveEventIndex];
+  
+  // 從已加入列表移除
+  joined.splice(leaveEventIndex, 1);
+  saveMemberJoined(joined);
+  
+  // 清除該活動的申請記錄
+  if (eventData && eventData.eventId) {
+    const reqKey = 'pc_join_req__' + eventData.eventId;
+    const requests = JSON.parse(localStorage.getItem(reqKey) || '[]');
+    const updatedRequests = requests.filter(r => r.email !== user.email);
+    localStorage.setItem(reqKey, JSON.stringify(updatedRequests));
+  }
+  
+  closeLeaveModal();
+  renderJoined();
+  PC_toast('✅ 已退出活動');
+}
+
+// 點擊彈窗外部關閉
+document.getElementById('leaveOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeLeaveModal();
+});
+
+checkPendingInvites();renderJoined();
+</script>
+</body></html>

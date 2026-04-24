@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>通知中心 — PayClub</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css"><script src="pc_auth.js"></script>
+<style>
+body{display:flex;}
+.content-wrap{max-width:760px;width:100%;margin:0 auto;}
+.notif-list{display:flex;flex-direction:column;gap:10px;margin-top:20px;}
+.notif-card{display:flex;gap:14px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:18px;cursor:pointer;transition:all 0.15s;position:relative;box-shadow:var(--shadow);}
+.notif-card:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:0 4px 14px rgba(79,110,247,0.08);}
+.notif-card.read{background:var(--surface);opacity:0.75;box-shadow:none;}
+.notif-card.read:hover{border-color:var(--border2);transform:none;}
+.notif-icon{width:42px;height:42px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;}
+.notif-card.read .notif-icon{background:var(--surface);filter:grayscale(1);}
+.notif-body{flex:1;}
+.notif-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:0.95rem;font-weight:700;margin-bottom:5px;color:var(--text);}
+.notif-card.unread .notif-title{color:var(--accent);}
+.notif-desc{font-size:0.85rem;color:var(--text2);line-height:1.55;margin-bottom:6px;}
+.notif-time{font-size:0.72rem;color:var(--text3);}
+.unread-dot{width:9px;height:9px;background:var(--red);border-radius:50%;position:absolute;top:22px;right:18px;box-shadow:0 0 0 3px var(--white);}
+.empty-state{text-align:center;padding:60px 20px;color:var(--text2);}
+/* Unified modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);backdrop-filter:blur(3px);z-index:200;display:none;align-items:center;justify-content:center;padding:16px;}
+.overlay.show{display:flex;}
+.modal{background:var(--white);border-radius:16px;padding:26px;width:100%;max-width:420px;box-shadow:0 24px 64px rgba(0,0,0,0.15);animation:slideUp 0.22s ease;}
+@keyframes slideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.modal-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:1.1rem;font-weight:800;margin-bottom:10px;}
+.modal-actions{display:flex;gap:8px;margin-top:18px;}
+.danger-box{background:var(--red-light);border:1px solid #fecaca;border-radius:10px;padding:12px 14px;font-size:0.84rem;color:var(--red);margin-bottom:4px;}
+</style>
+</head>
+<body>
+<div class="mobile-overlay" id="mobileOverlay" onclick="closeSidebar()"></div>
+<nav class="mobile-nav">
+  <div class="mobile-nav-logo"><span style="width:7px;height:7px;background:var(--accent);border-radius:50%;display:inline-block;margin-right:4px"></span>PayClub</div>
+  <button class="hamburger" onclick="openSidebar()">☰</button>
+</nav>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo"><div class="logo-dot"></div>PayClub</div>
+  <nav class="sidebar-nav">
+    <a class="nav-item" href="dashboard.html"><span class="icon">🏠</span>總覽</a>
+    <a class="nav-item" href="create.html"><span class="icon">➕</span>建立活動</a>
+    <a class="nav-item" href="member.html"><span class="icon">🤝</span>加入活動</a>
+    <a class="nav-item" href="payment-methods.html"><span class="icon">💳</span>繳費方式管理</a>
+    <a class="nav-item" href="report.html"><span class="icon">📊</span>財務報表</a>
+    <div class="nav-section">我的活動</div>
+    <div id="sidebarEvents"></div>
+    <a class="nav-item" href="index.html"><span class="icon">🌐</span>首頁</a>
+    <a class="nav-item active" href="notifications.html" style="position:relative"><span class="icon">🔔</span>通知<span class="badge-notify" id="notifBadge" style="display:none">0</span></a>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="user-card">
+      <div class="avatar" id="avatarInitial">?</div>
+      <div class="user-info"><div class="user-name" id="userName">載入中</div><div class="user-email" id="userEmail">...</div></div>
+      <button class="logout-btn" onclick="PC_logout()">登出</button>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="content-wrap">
+    <div class="topbar">
+      <div><div class="page-title">通知中心</div><div class="page-sub">查看所有活動相關的最新消息</div></div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost" onclick="markAllRead()">✓ 全部已讀</button>
+        <button class="btn btn-danger" onclick="openClearModal()">🗑 清空紀錄</button>
+      </div>
+    </div>
+    <div class="notif-list" id="notifList"></div>
+  </div>
+</main>
+
+<!-- Clear confirm modal -->
+<div class="overlay" id="clearOverlay">
+  <div class="modal" style="max-width:380px;text-align:center;">
+    <div style="font-size:2.5rem;margin-bottom:8px">🗑</div>
+    <div class="modal-title">清空所有通知？</div>
+    <div class="danger-box">此操作無法復原，所有通知紀錄將永久刪除。</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="flex:1" onclick="document.getElementById('clearOverlay').classList.remove('show')">取消</button>
+      <button class="btn btn-danger" style="flex:2" onclick="confirmClear()">確認清空</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+const user=PC_requireLogin();if(!user)throw new Error('r');
+PC_fillSidebarUser();
+function openSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('mobileOverlay').classList.add('show');}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('mobileOverlay').classList.remove('show');}
+function toggleSideMenu(id){document.getElementById(id).classList.toggle('open');document.getElementById(id+'_icon').classList.toggle('open');}
+function renderSidebar(){
+  const evts=PC_getAllMyEvents();
+  const created=evts.filter(e=>e._isOwner);
+  const joined=evts.filter(e=>!e._isOwner && (!e._myMember || e._myMember.status !== 'pending_invite'));
+  let html='';
+  html+=`<div class="sidebar-menu-header" onclick="toggleSideMenu('menu_created')">已建立活動 <span class="chevron open" id="menu_created_icon">▼</span></div>`;
+  html+=`<div class="sidebar-menu-list open" id="menu_created">`;
+  if(!created.length) html+=`<div style="padding:6px 12px;font-size:0.75rem;color:var(--text3)">無資料</div>`;
+  html+=created.map(e=>`<a class="nav-event" href="event.html?id=${e.id}"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${e.title}</span></a>`).join('');
+  html+=`</div>`;
+  html+=`<div class="sidebar-menu-header" onclick="toggleSideMenu('menu_joined')">已加入活動 <span class="chevron open" id="menu_joined_icon">▼</span></div>`;
+  html+=`<div class="sidebar-menu-list open" id="menu_joined">`;
+  if(!joined.length) html+=`<div style="padding:6px 12px;font-size:0.75rem;color:var(--text3)">無資料</div>`;
+  html+=joined.map(e=>`<a class="nav-event" href="event.html?id=${e.id}"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${e.title}</span></a>`).join('');
+  html+=`</div>`;
+  const c=document.getElementById('sidebarEvents');if(c)c.innerHTML=html;
+  PC_fillSidebarUser();
+}
+function loadNotifs(){return JSON.parse(localStorage.getItem('pc_notif__'+user.email)||'[]');}
+function saveNotifs(list){localStorage.setItem('pc_notif__'+user.email,JSON.stringify(list));PC_fillSidebarUser();}
+function renderNotifs(){
+  const list=loadNotifs();
+  const container=document.getElementById('notifList');
+  if(!list.length){container.innerHTML='<div class="empty-state"><div style="font-size:2.5rem;opacity:0.4;margin-bottom:12px">📭</div><p>目前沒有任何通知</p></div>';return;}
+  container.innerHTML=list.map(n=>{
+    let icon='🔔';
+    if(n.title.includes('刪除')||n.title.includes('移除'))icon='🗑';
+    else if(n.title.includes('申請')||n.title.includes('加入'))icon='👥';
+    else if(n.title.includes('金額')||n.title.includes('繳費'))icon='💰';
+    else if(n.title.includes('拒絕'))icon='❌';
+    else if(n.title.includes('通過')||n.title.includes('成功'))icon='✅';
+    else if(n.title.includes('催款'))icon='📣';
+    else if(n.title.includes('邀請'))icon='🎫';
+    else if(n.title.includes('狀態'))icon='⚙️';
+    const t=new Date(n.time).toLocaleString('zh-TW',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    return `<div class="notif-card ${n.read?'read':'unread'}" onclick="markRead(${n.id})">
+      <div class="notif-icon">${icon}</div>
+      <div class="notif-body">
+        <div class="notif-title">${n.title}</div>
+        <div class="notif-desc">${n.content}</div>
+        <div class="notif-time">${t}</div>
+      </div>
+      ${!n.read?'<div class="unread-dot"></div>':''}
+    </div>`;
+  }).join('');
+}
+function markRead(id){const list=loadNotifs();const n=list.find(x=>x.id===id);if(n&&!n.read){n.read=true;saveNotifs(list);renderNotifs();}}
+function markAllRead(){const list=loadNotifs();let ch=false;list.forEach(n=>{if(!n.read){n.read=true;ch=true;}});if(ch){saveNotifs(list);renderNotifs();PC_toast('✅ 已全部標示為已讀');}}
+function openClearModal(){document.getElementById('clearOverlay').classList.add('show');}
+function confirmClear(){const list=loadNotifs();if(!list.length)return;saveNotifs([]);renderNotifs();document.getElementById('clearOverlay').classList.remove('show');PC_toast('🗑 通知已清空');}
+document.getElementById('clearOverlay').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
+renderSidebar();renderNotifs();
+</script>
+</body></html>
