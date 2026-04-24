@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登入 — PayClub</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css"><script src="pc_auth.js"></script>
+<style>
+body{display:flex;min-height:100vh;}
+.left{flex:1;background:#2d3a8c;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:48px 40px;position:relative;overflow:hidden;}
+.left::before{content:'';position:absolute;width:360px;height:360px;border-radius:50%;background:rgba(255,255,255,0.05);top:-80px;right:-80px;}
+.left-inner{position:relative;z-index:1;color:#fff;text-align:center;max-width:300px;}
+.left-icon{font-size:2.2rem;margin-bottom:16px;}
+.left-inner h1{font-family:'Plus Jakarta Sans',sans-serif;font-size:2rem;font-weight:800;margin-bottom:10px;}
+.left-inner p{color:rgba(255,255,255,0.65);font-size:0.9rem;line-height:1.7;margin-bottom:36px;}
+.feat-list{display:flex;flex-direction:column;gap:9px;text-align:left;width:100%;}
+.feat-item{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.08);border-radius:9px;padding:11px 14px;font-size:0.85rem;color:rgba(255,255,255,0.9);font-weight:500;}
+.right{width:460px;background:var(--white);display:flex;flex-direction:column;justify-content:center;padding:48px 40px;}
+.right-logo{display:flex;align-items:center;gap:8px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:1.2rem;color:var(--accent);margin-bottom:32px;}
+.right-logo-dot{width:8px;height:8px;background:var(--accent);border-radius:50%;}
+.tabs{display:flex;background:var(--surface);border-radius:9px;padding:3px;margin-bottom:22px;}
+.tab{flex:1;padding:9px;border:none;background:transparent;color:var(--text2);font-size:0.87rem;font-weight:600;cursor:pointer;border-radius:7px;transition:all 0.2s;font-family:'Noto Sans TC',sans-serif;}
+.tab.active{background:var(--white);color:var(--text);box-shadow:var(--shadow);}
+.form-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:1.5rem;font-weight:800;margin-bottom:4px;}
+.form-sub{color:var(--text2);font-size:0.85rem;margin-bottom:18px;}
+.demo-box{background:var(--accent-light);border:1px solid #c7d2fe;border-radius:9px;padding:10px 14px;margin-bottom:16px;font-size:0.8rem;color:#4338ca;line-height:1.7;}
+.demo-fill{background:var(--accent);color:#fff;border:none;padding:4px 11px;border-radius:6px;font-size:0.76rem;font-weight:700;cursor:pointer;margin-top:5px;font-family:'Noto Sans TC',sans-serif;}
+.submit-btn{width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:9px;font-size:0.95rem;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',sans-serif;transition:all 0.15s;margin-top:4px;}
+.submit-btn:hover{background:var(--accent-dark);}
+.divider{display:flex;align-items:center;gap:12px;margin:16px 0;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.divider span{font-size:0.75rem;color:var(--text3);}
+.google-btn{width:100%;padding:11px;background:var(--white);color:var(--text);border:1.5px solid var(--border);border-radius:9px;font-size:0.88rem;font-weight:600;cursor:pointer;font-family:'Noto Sans TC',sans-serif;display:flex;align-items:center;justify-content:center;gap:9px;transition:all 0.15s;}
+.google-btn:hover{border-color:var(--border2);background:var(--surface);}
+input.err{border-color:var(--red)!important;}
+.err-msg{color:var(--red);font-size:0.74rem;margin-top:3px;display:none;}
+.err-msg.show{display:block;}
+.preview-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;z-index:999;backdrop-filter:blur(4px);}
+.preview-overlay.show{display:flex;}
+.preview-modal{background:var(--white);border-radius:16px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto;padding:28px;position:relative;}
+.preview-close{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:50%;background:var(--surface);border:none;cursor:pointer;font-size:1.2rem;color:var(--text2);}
+.preview-close:hover{background:var(--border);}
+.preview-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:1.4rem;font-weight:800;margin-bottom:12px;color:var(--text);}
+.preview-content{color:var(--text2);font-size:0.9rem;line-height:1.7;}
+.preview-img{width:100%;border-radius:12px;margin:16px 0;border:1px solid var(--border);}
+@media(max-width:860px){.left{display:none;}.right{width:100%;padding:36px 24px;}}
+</style>
+</head>
+<body>
+<div class="left">
+  <div class="left-inner">
+    <div class="left-icon">💰</div>
+    <h1>PayClub</h1>
+    <p>校園社團金流管理平台，告別手動催款，讓收款變得簡單透明。</p>
+    <div class="feat-list">
+      <div class="feat-item" style="cursor:pointer;" onclick="showPreview('dashboard')">
+        📊 查看範例儀表板
+      </div>
+      <div class="feat-item" style="cursor:pointer;" onclick="showPreview('event')">
+        👥 範例活動管理
+      </div>
+      <div class="feat-item" style="cursor:pointer;" onclick="showPreview('payment')">
+        💰 繳費流程預覽
+      </div>
+      <div class="feat-item" style="cursor:pointer;" onclick="showPreview('roles')">
+        📱 成員角色介紹
+      </div>
+    </div>
+    <div style="margin-top:24px;font-size:0.75rem;color:rgba(255,255,255,0.5);">點擊上方項目查看功能預覽</div>
+  </div>
+</div>
+<div class="right">
+  <div class="right-logo"><div class="right-logo-dot"></div>PayClub</div>
+  <div class="tabs">
+    <button class="tab active" id="tabLogin" onclick="switchTab('login')">登入</button>
+    <button class="tab" id="tabReg" onclick="switchTab('register')">註冊</button>
+  </div>
+
+  <!-- LOGIN -->
+  <div id="loginForm">
+    <div class="form-title">歡迎回來</div>
+    <div class="form-sub">每個分頁獨立登入，不影響其他分頁</div>
+    <div class="form-group"><label class="form-label">Email</label><input type="email" id="lEmail" class="form-input" placeholder="your@email.com"><div class="err-msg" id="lEmailErr">請輸入有效 Email</div></div>
+    <div class="form-group"><label class="form-label">密碼</label><input type="password" id="lPwd" class="form-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')handleLogin()"><div class="err-msg" id="lPwdErr">密碼不得少於 6 字</div></div>
+    <button class="submit-btn" onclick="handleLogin()">登入</button>
+    <div class="divider"><span>或</span></div>
+    <button class="google-btn" onclick="handleGoogle()"><svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>使用 Google 帳號登入</button>
+  </div>
+
+  <!-- REGISTER -->
+  <div id="regForm" style="display:none">
+    <div class="form-title">建立帳號</div>
+    <div class="form-sub">建立帳號後，你可以建立活動或透過邀請碼加入活動</div>
+    <div class="form-group"><label class="form-label">姓名</label><input type="text" id="rName" class="form-input" placeholder="林小明"></div>
+    <div class="form-group"><label class="form-label">Email</label><input type="email" id="rEmail" class="form-input" placeholder="your@email.com"></div>
+    <div class="form-group"><label class="form-label">密碼（至少 6 字）</label><input type="password" id="rPwd" class="form-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')handleRegister()"></div>
+    <button class="submit-btn" onclick="handleRegister()">建立帳號</button>
+    <div class="divider"><span>或</span></div>
+    <button class="google-btn" onclick="handleGoogle()"><svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>使用 Google 帳號註冊</button>
+  </div>
+</div>
+
+<!-- 預覽彈窗 -->
+<div class="preview-overlay" id="previewOverlay" onclick="if(event.target===this)closePreview()">
+  <div class="preview-modal">
+    <button class="preview-close" onclick="closePreview()">×</button>
+    <div class="preview-title" id="previewTitle"></div>
+    <div class="preview-content" id="previewContent"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script type="module">
+import { PC_waitAuth, PC_loginWithGoogle, PC_loginEmail, PC_registerEmail, PC_toast } from './pc_auth.js';
+
+// 如果已登入，直接跳轉
+PC_waitAuth().then(user => { if(user) location.href = 'dashboard.html'; });
+
+const PREVIEW_DATA = {
+  dashboard:{title:'📊 儀表板功能預覽',content:`<p><strong>統一管理所有活動</strong></p><p>• 即時查看所有活動的繳費狀態<br>• 一目瞭然的收款統計與繳費率<br>• 快速篩選進行中、已結束活動<br>• 支援批量操作與匯出報表</p><p style="margin-top:16px;padding:12px;background:var(--surface);border-radius:8px;">💡 <strong>提示：</strong>註冊後即可建立你的第一個活動，或透過邀請碼加入現有活動。</p>`},
+  event:{title:'👥 活動管理功能',content:`<p><strong>完整的活動管理工具</strong></p><p>• <strong>成員管理：</strong>新增、移除成員，分配角色<br>• <strong>繳費追蹤：</strong>即時查看誰已繳費、誰還未繳<br>• <strong>自動催款：</strong>一鍵發送催款通知給未繳費成員<br>• <strong>申請審核：</strong>審核加入申請，支援封鎖功能</p>`},
+  payment:{title:'💰 繳費流程',content:`<p><strong>簡單快速的繳費體驗</strong></p><p><strong>Step 1：</strong>發起人建立活動並設定繳費方式<br><strong>Step 2：</strong>成員透過邀請碼加入活動<br><strong>Step 3：</strong>成員進入繳費頁面完成繳費<br><strong>Step 4：</strong>系統自動更新狀態</p>`},
+  roles:{title:'📱 成員角色說明',content:`<p><strong>彈性的權限管理系統</strong></p><p><strong>🎯 發起人：</strong>活動建立者，擁有所有權限<br><strong>👑 管理員：</strong>可管理成員、審核申請、調整金額<br><strong>📊 統計者：</strong>可查看統計資料、匯出報表<br><strong>👤 成員：</strong>一般成員，負責繳費</p>`}
+};
+
+window.showPreview = (type) => {
+  const d=PREVIEW_DATA[type]; if(!d) return;
+  document.getElementById('previewTitle').textContent=d.title;
+  document.getElementById('previewContent').innerHTML=d.content;
+  document.getElementById('previewOverlay').classList.add('show');
+};
+window.closePreview = () => document.getElementById('previewOverlay').classList.remove('show');
+
+const urlp = new URLSearchParams(location.search);
+if(urlp.get('mode')==='register') switchTab('register');
+
+window.switchTab = (t) => {
+  document.getElementById('loginForm').style.display=t==='login'?'block':'none';
+  document.getElementById('regForm').style.display=t==='register'?'block':'none';
+  document.getElementById('tabLogin').classList.toggle('active',t==='login');
+  document.getElementById('tabReg').classList.toggle('active',t==='register');
+};
+
+function doRedirect() {
+  PC_toast('✓ 登入成功');
+  setTimeout(() => location.href = urlp.get('next') || 'dashboard.html', 700);
+}
+
+window.handleLogin = async () => {
+  const email=document.getElementById('lEmail').value.trim(), pwd=document.getElementById('lPwd').value;
+  let ok=true;
+  if(!email||!email.includes('@')){document.getElementById('lEmail').classList.add('err');document.getElementById('lEmailErr').classList.add('show');ok=false;}
+  else{document.getElementById('lEmail').classList.remove('err');document.getElementById('lEmailErr').classList.remove('show');}
+  if(pwd.length<6){document.getElementById('lPwd').classList.add('err');document.getElementById('lPwdErr').classList.add('show');ok=false;}
+  else{document.getElementById('lPwd').classList.remove('err');document.getElementById('lPwdErr').classList.remove('show');}
+  if(!ok) return;
+  try {
+    await PC_loginEmail(email, pwd);
+    doRedirect();
+  } catch(e) { PC_toast('❌ ' + e.message); }
+};
+
+window.handleRegister = async () => {
+  const name=document.getElementById('rName').value.trim(), email=document.getElementById('rEmail').value.trim(), pwd=document.getElementById('rPwd').value;
+  if(!name||!email||!email.includes('@')||pwd.length<6){PC_toast('請填寫所有欄位（密碼至少 6 字）');return;}
+  try {
+    await PC_registerEmail(name, email, pwd);
+    doRedirect();
+  } catch(e) { PC_toast('❌ ' + e.message); }
+};
+
+window.handleGoogle = async () => {
+  try {
+    await PC_loginWithGoogle();
+    doRedirect();
+  } catch(e) { PC_toast('❌ Google 登入失敗：' + e.message); }
+};
+</script>
+</body></html>

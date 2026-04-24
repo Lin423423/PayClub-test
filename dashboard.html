@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>儀表板 — PayClub</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<script type="module">
+import { PC_requireLogin, PC_getUser, PC_logout, PC_getAllMyEvents, PC_getEvents,
+         PC_saveEvent, PC_deleteEvent, PC_getEvent, PC_updateEvent,
+         PC_findEventByCode, PC_getJoinRequests,
+         PC_getCollected, PC_getExpected, PC_getPayers, PC_getExpectedAmount,
+         PC_fillSidebarUser, PC_toast, PC_copyText,
+         PC_sendNotify, PC_getUnreadCount } from './pc_auth.js';
+
+// 掛到 window 讓 HTML onclick 能用
+window.PC_logout = PC_logout;
+window.PC_toast = PC_toast;
+window.PC_copyText = PC_copyText;
+<style>
+body{display:flex;}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);}
+.stat-label{font-size:0.72rem;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:7px;}
+.stat-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:1.7rem;font-weight:800;letter-spacing:-0.03em;line-height:1;}
+.stat-sub{font-size:0.72rem;color:var(--text3);margin-top:4px;}
+
+/* Payment methods panel */
+.pay-methods-panel{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-bottom:20px;box-shadow:var(--shadow);}
+.panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+.panel-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:0.95rem;font-weight:700;display:flex;align-items:center;gap:8px;}
+.methods-grid{display:flex;gap:10px;flex-wrap:wrap;}
+.method-chip{display:flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;cursor:pointer;transition:all 0.15s;user-select:none;}
+.method-chip.active{border-color:var(--accent);background:var(--accent-light);}
+.method-chip:hover:not(.active){border-color:var(--border2);}
+.method-icon{font-size:1.2rem;}
+.method-name{font-size:0.84rem;font-weight:600;color:var(--text);}
+.method-chip.active .method-name{color:var(--accent);}
+.method-toggle{width:16px;height:16px;border-radius:50%;border:2px solid var(--border2);background:var(--white);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.method-chip.active .method-toggle{background:var(--accent);border-color:var(--accent);}
+.method-chip.active .method-toggle::after{content:'✓';color:#fff;font-size:0.65rem;font-weight:700;}
+.add-method-btn{display:flex;align-items:center;gap:6px;background:transparent;border:1.5px dashed var(--border2);border-radius:10px;padding:10px 14px;cursor:pointer;color:var(--text3);font-size:0.82rem;font-family:'Noto Sans TC',sans-serif;transition:all 0.15s;}
+.add-method-btn:hover{border-color:var(--accent);color:var(--accent);}
+.methods-note{font-size:0.76rem;color:var(--text3);margin-top:10px;}
+
+/* Bulk bar */
+.bulk-bar{display:flex;align-items:center;gap:10px;background:var(--accent-light);border:1px solid #c7d2fe;border-radius:10px;padding:10px 16px;margin-bottom:14px;flex-wrap:wrap;}
+.bulk-bar span{font-size:0.84rem;color:var(--accent);font-weight:600;flex:1;}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+.section-title{font-size:0.92rem;font-weight:700;}
+
+/* Event cards */
+.events-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;}
+.event-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);padding:18px;cursor:pointer;transition:all 0.15s;box-shadow:var(--shadow);position:relative;}
+.event-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 4px 14px rgba(79,110,247,0.1);}
+.event-card.selected{border-color:var(--accent);background:var(--accent-light);}
+.ec-check{position:absolute;top:14px;left:14px;width:18px;height:18px;border-radius:5px;border:2px solid var(--border2);background:var(--white);display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:700;z-index:2;}
+.ec-check.checked{background:var(--accent);border-color:var(--accent);color:#fff;}
+.ec-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;gap:8px;}
+.ec-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:0.95rem;font-weight:700;flex:1;line-height:1.3;}
+.ec-meta{display:flex;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+.ec-meta span{font-size:0.76rem;color:var(--text2);}
+.ec-invite{background:var(--accent-light);border:1px solid #c7d2fe;border-radius:6px;padding:4px 10px;display:inline-flex;align-items:center;gap:6px;margin-bottom:8px;cursor:pointer;transition:all 0.15s;}
+.ec-invite:hover{background:#c7d2fe;}
+.ec-invite-code{font-family:'Plus Jakarta Sans',sans-serif;font-size:0.82rem;font-weight:800;color:var(--accent);letter-spacing:0.1em;}
+.ec-revenue{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px;}
+.rev-box{background:var(--surface);border-radius:7px;padding:7px 10px;}
+.rev-label{font-size:0.65rem;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px;}
+.rev-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:0.95rem;font-weight:700;}
+.rev-val.g{color:var(--green);}
+.ec-foot{display:flex;justify-content:space-between;font-size:0.72rem;color:var(--text2);margin-top:4px;}
+.ec-arrow{position:absolute;bottom:14px;right:14px;color:var(--text3);font-size:0.8rem;transition:all 0.15s;}
+.event-card:hover .ec-arrow{color:var(--accent);transform:translateX(3px);}
+.empty-state{text-align:center;padding:48px 20px;color:var(--text2);grid-column:1/-1;}
+
+/* Add method modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);backdrop-filter:blur(2px);z-index:200;display:none;align-items:center;justify-content:center;padding:16px;}
+.overlay.show{display:flex;}
+.modal{background:var(--white);border-radius:14px;padding:24px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.15);animation:slideUp 0.2s ease;}
+@keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.modal-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:1rem;font-weight:800;margin-bottom:16px;}
+.modal-actions{display:flex;gap:8px;margin-top:16px;}
+
+@media(max-width:768px){.stats-grid{grid-template-columns:1fr 1fr;}.events-grid{grid-template-columns:1fr;}.methods-grid{gap:8px;}}
+@media(max-width:480px){.stat-val{font-size:1.4rem;}}
+.badge-founder{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;}
+.badge-admin{background:#fef3c7;color:#92400e;border:1px solid #fde68a;}
+</style>
+</head>
+<body>
+<div class="mobile-overlay" id="mobileOverlay" onclick="closeSidebar()"></div>
+<nav class="mobile-nav">
+  <div class="mobile-nav-logo"><span style="width:7px;height:7px;background:var(--accent);border-radius:50%;display:inline-block;margin-right:4px"></span>PayClub</div>
+  <button class="hamburger" onclick="openSidebar()">☰</button>
+</nav>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo"><div class="logo-dot"></div>PayClub</div>
+  <nav class="sidebar-nav">
+    <a class="nav-item" href="dashboard.html"><span class="icon">🏠</span>總覽</a>
+    <a class="nav-item" href="create.html"><span class="icon">➕</span>建立活動</a>
+    <a class="nav-item" href="member.html"><span class="icon">🤝</span>加入活動</a>
+    <a class="nav-item" href="payment-methods.html"><span class="icon">💳</span>繳費方式管理</a>
+    <a class="nav-item" href="report.html"><span class="icon">📊</span>財務報表</a>
+    <div class="nav-section">我的活動</div>
+    <div id="sidebarEvents"></div>
+    <a class="nav-item" href="index.html"><span class="icon">🌐</span>首頁</a>
+    <a class="nav-item" href="notifications.html" style="position:relative">
+      <span class="icon">🔔</span>通知
+      <span class="badge-notify" id="notifBadge" style="display:none">0</span>
+    </a>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="user-card">
+      <div class="avatar" id="avatarInitial">?</div>
+      <div class="user-info">
+        <div class="user-name" id="userName">載入中</div>
+        <div class="user-email" id="userEmail">email...</div>
+      </div>
+      <button class="logout-btn" onclick="PC_logout()">登出</button>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div><div class="page-title">總覽儀表板</div><div class="page-sub" id="greetMsg"></div></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-label">總收款</div><div class="stat-val" id="sTotal" style="color:var(--green)">$0</div><div class="stat-sub">所有活動合計</div></div>
+    <div class="stat-card"><div class="stat-label">應收金額</div><div class="stat-val" id="sExpected">$0</div><div class="stat-sub">全部總應收</div></div>
+    <div class="stat-card"><div class="stat-label">整體繳費率</div><div class="stat-val" id="sRate">0%</div><div class="stat-sub" id="sRateSub"></div></div>
+    <div class="stat-card"><div class="stat-label">進行中活動</div><div class="stat-val" id="sActive">0</div><div class="stat-sub">個活動</div></div>
+  </div>
+
+  <!-- 活動邀請確認 banner 已移除，改為按鈕式 -->
+
+  <!-- Bulk bar -->
+  <div class="bulk-bar" id="bulkBar" style="display:none">
+    <span id="bulkCount">已選 0 個</span>
+    <button class="btn btn-danger" onclick="deleteBulk()">🗑 刪除所選</button>
+    <button class="btn btn-ghost" onclick="clearSel()">取消</button>
+  </div>
+
+  <div class="section-header">
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+      <div class="section-title">活動列表</div>
+      <div class="dash-filter-wrap">
+        <button class="dash-filter-btn active" onclick="setDashFilter('all', this)">全部</button>
+        <button class="dash-filter-btn" onclick="setDashFilter('created', this)">已建立</button>
+        <button class="dash-filter-btn" onclick="setDashFilter('joined', this)">已加入</button>
+      </div>
+      <button class="btn btn-ghost" id="inviteBtn" onclick="openInviteModal()" style="font-size:0.8rem;padding:6px 12px;display:none;border-color:var(--orange);color:var(--orange);">
+        📬 活動邀請 <span id="inviteBadge" style="background:var(--orange);color:#fff;border-radius:100px;font-size:0.65rem;padding:1px 6px;margin-left:4px;font-weight:700;"></span>
+      </button>
+    </div>
+    <button class="btn btn-ghost" id="selBtn" onclick="toggleSel()" style="font-size:0.8rem;padding:6px 12px;">☑ 選取</button>
+  </div>
+  <div class="events-grid" id="eventsGrid"></div>
+</main>
+
+<!-- 活動邀請列表 Modal -->
+<div class="overlay" id="inviteListOverlay" onclick="if(event.target===this)closeInviteModal()">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-title">📬 活動邀請</div>
+    <div class="modal-sub" style="margin-top:-8px;margin-bottom:16px;font-size:0.82rem;color:var(--text3);">以下活動邀請你加入，請確認是否接受</div>
+    <div id="inviteListBody" style="display:flex;flex-direction:column;gap:10px;max-height:380px;overflow-y:auto;"></div>
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn btn-ghost" style="flex:1;justify-content:center;" onclick="closeInviteModal()">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add custom method modal -->
+<div class="overlay" id="addMethodOverlay">
+  <div class="modal">
+    <div class="modal-title">新增自訂繳費方式</div>
+    <div class="form-group"><label class="form-label">圖示（Emoji）</label><input type="text" id="newMethodIcon" class="form-input" placeholder="例：🏦" maxlength="2"></div>
+    <div class="form-group"><label class="form-label">名稱</label><input type="text" id="newMethodName" class="form-input" placeholder="例：玉山銀行轉帳"></div>
+    <div style="font-size:0.78rem;color:var(--text3);background:var(--surface);border-radius:8px;padding:10px 12px;">⚙️ 自訂繳費方式的實際收款功能需串接後端後啟用，目前僅供 UI 展示。</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeAddMethod()">取消</button>
+      <button class="btn btn-primary" style="flex:2" onclick="addCustomMethod()">新增</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Delete confirm modal -->
+<div class="overlay" id="delEvtOverlay">
+  <div class="modal" style="max-width:400px;text-align:center;">
+    <div style="font-size:2.5rem;margin-bottom:8px">🗑</div>
+    <div class="modal-title" id="delEvtTitle">確認刪除活動？</div>
+    <div style="background:var(--red-light);border:1px solid #fecaca;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:0.84rem;color:var(--red);" id="delEvtDesc">此操作無法復原。</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="flex:1" onclick="document.getElementById('delEvtOverlay').classList.remove('show')">取消</button>
+      <button class="btn btn-danger" style="flex:2" onclick="confirmDelEvt()">確認刪除</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete payment method modal -->
+<div class="overlay" id="deleteMethodOverlay">
+  <div class="modal" style="max-width:400px;text-align:center;">
+    <div style="font-size:2.5rem;margin-bottom:8px">🗑</div>
+    <div class="modal-title">確認刪除繳費方式？</div>
+    <div class="modal-sub" id="deleteMethodName" style="font-weight:600;color:var(--accent)"></div>
+    <div style="background:var(--red-light);border:1px solid #fecaca;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:0.84rem;color:var(--red);">此操作無法復原。</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeDeleteMethod()">取消</button>
+      <button class="btn btn-danger" style="flex:2" onclick="executeDeleteMethod()">確認刪除</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script type="module">
+// ── 初始化 ──
+let user = null;
+
+async function init() {
+  user = await PC_requireLogin();
+  if (!user) return;
+  const h = new Date().getHours();
+  document.getElementById('greetMsg').textContent = (h<12?'早安':h<18?'午安':'晚安')+'，'+user.name+'！';
+  await PC_fillSidebarUser();
+  await renderAll();
+  checkPendingInvites();
+}
+
+let selMode=false, selIds=new Set();
+
+function openSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('mobileOverlay').classList.add('show');}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('mobileOverlay').classList.remove('show');}
+window.openSidebar=openSidebar; window.closeSidebar=closeSidebar;
+
+// ── Sidebar ──
+let currentDashFilter = 'all';
+
+window.setDashFilter = (filter, el) => {
+  currentDashFilter = filter;
+  document.querySelectorAll('.dash-filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderEvents();
+};
+
+window.toggleSideMenu = (id) => {
+  document.getElementById(id).classList.toggle('open');
+  document.getElementById(id+'_icon').classList.toggle('open');
+};
+
+async function renderSidebar() {
+  const evts = await PC_getAllMyEvents();
+  const created = evts.filter(e => e._isOwner);
+  const joined = evts.filter(e => !e._isOwner && !(e._myMember && e._myMember.status === 'pending_invite'));
+  let html = '';
+  html += `<div class="sidebar-menu-header" onclick="toggleSideMenu('menu_created')">已建立活動 <span class="chevron open" id="menu_created_icon">▼</span></div>`;
+  html += `<div class="sidebar-menu-list open" id="menu_created">`;
+  if(!created.length) html += `<div style="padding:6px 12px;font-size:0.75rem;color:var(--text3)">無資料</div>`;
+  html += created.map(e=>`<a class="nav-event" href="event.html?id=${e.id}"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${e.title}</span></a>`).join('');
+  html += `</div>`;
+  html += `<div class="sidebar-menu-header" onclick="toggleSideMenu('menu_joined')">已加入活動 <span class="chevron open" id="menu_joined_icon">▼</span></div>`;
+  html += `<div class="sidebar-menu-list open" id="menu_joined">`;
+  if(!joined.length) html += `<div style="padding:6px 12px;font-size:0.75rem;color:var(--text3)">無資料</div>`;
+  html += joined.map(e=>`<a class="nav-event" href="event.html?id=${e.id}"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${e.title}</span></a>`).join('');
+  html += `</div>`;
+  const c = document.getElementById('sidebarEvents'); if(c) c.innerHTML = html;
+  await PC_fillSidebarUser();
+}
+
+// ── Stats ──
+async function renderStats() {
+  const evts = await PC_getEvents();
+  let c=0,ex=0,pc=0,pt=0,ac=0;
+  evts.forEach(e=>{if(e.status==='active')ac++;c+=PC_getCollected(e);ex+=PC_getExpected(e);const p=PC_getPayers(e);pt+=p.length;pc+=p.filter(m=>m.status==='paid').length;});
+  document.getElementById('sTotal').textContent='$'+c.toLocaleString();
+  document.getElementById('sExpected').textContent='$'+ex.toLocaleString();
+  const r=ex>0?Math.min(100,Math.round(c/ex*100)):0;
+  document.getElementById('sRate').textContent=r+'%';
+  document.getElementById('sRateSub').textContent=pc+' / '+pt+' 人';
+  document.getElementById('sActive').textContent=ac;
+}
+
+// ── Select ──
+window.toggleSel = () => {selMode=!selMode;selIds.clear();document.getElementById('selBtn').textContent=selMode?'✕ 結束':'☑ 選取';document.getElementById('selBtn').className=selMode?'btn btn-danger':'btn btn-ghost';document.getElementById('bulkBar').style.display='none';renderEvents();};
+window.toggleCard = (id,e) => {e.stopPropagation();if(selIds.has(id))selIds.delete(id);else selIds.add(id);const bar=document.getElementById('bulkBar');bar.style.display=selIds.size>0?'flex':'none';document.getElementById('bulkCount').textContent='已選 '+selIds.size+' 個';renderEvents();};
+window.clearSel = () => {selIds.clear();document.getElementById('bulkBar').style.display='none';renderEvents();};
+
+window.deleteBulk = async () => {
+  if(!selIds.size) return;
+  const n=selIds.size;
+  for(const id of selIds) await PC_deleteEvent(id);
+  selIds.clear();
+  document.getElementById('bulkBar').style.display='none';
+  selMode=false;
+  document.getElementById('selBtn').textContent='☑ 選取';
+  document.getElementById('selBtn').className='btn btn-ghost';
+  await renderAll();
+  PC_toast('✅ 已處理 '+n+' 個活動');
+};
+
+window.copyInvite = (code,e) => { e.stopPropagation(); PC_copyText(code,'🔑 邀請碼已複製：'+code); };
+
+// ── Invite Modal ──
+let allPendingInvites = [];
+
+async function checkPendingInvites() {
+  const evts = await PC_getAllMyEvents();
+  allPendingInvites = evts.filter(e => e._myMember && e._myMember.status === 'pending_invite');
+  const btn = document.getElementById('inviteBtn');
+  const badge = document.getElementById('inviteBadge');
+  if(allPendingInvites.length > 0){
+    btn.style.display='inline-flex';
+    badge.textContent=allPendingInvites.length;
+  } else {
+    btn.style.display='none';
+  }
+}
+
+window.openInviteModal = () => {
+  document.getElementById('inviteListBody').innerHTML = allPendingInvites.map((inv,idx)=>`
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
+      <div style="font-weight:700;margin-bottom:4px;">${inv.title}</div>
+      <div style="font-size:0.82rem;color:var(--text2);margin-bottom:12px;">${inv.desc||'邀請你加入此活動'}</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost" style="flex:1;justify-content:center;font-size:0.82rem;" onclick="rejectInvite(${idx})">拒絕</button>
+        <button class="btn btn-primary" style="flex:2;justify-content:center;font-size:0.82rem;" onclick="acceptInvite(${idx})">✓ 同意加入</button>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('inviteListOverlay').classList.add('show');
+};
+
+window.closeInviteModal = () => document.getElementById('inviteListOverlay').classList.remove('show');
+
+window.acceptInvite = async (idx) => {
+  const inv = allPendingInvites[idx]; if(!inv) return;
+  await PC_updateEvent(inv.id, e => {
+    const m = (e.members||[]).find(mb=>mb.email===user.email||mb.uid===user.uid);
+    if(m) m.status = 'pending';
+  });
+  await PC_sendNotify(inv.ownerEmail,'邀請已接受 ✅',user.name+'已接受加入「'+inv.title+'」。','success');
+  PC_toast('✅ 已加入「'+inv.title+'」');
+  allPendingInvites.splice(idx,1);
+  await checkPendingInvites();
+  closeInviteModal();
+  if(allPendingInvites.length>0) openInviteModal();
+  await renderAll();
+};
+
+window.rejectInvite = async (idx) => {
+  const inv = allPendingInvites[idx]; if(!inv) return;
+  await PC_updateEvent(inv.id, e => {
+    e.members = (e.members||[]).filter(m=>m.email!==user.email&&m.uid!==user.uid);
+  });
+  PC_toast('已拒絕「'+inv.title+'」的邀請');
+  allPendingInvites.splice(idx,1);
+  await checkPendingInvites();
+  if(allPendingInvites.length>0) openInviteModal(); else closeInviteModal();
+  await renderAll();
+};
+
+// ── Events rendering ──
+async function renderEvents() {
+  let evts = await PC_getAllMyEvents();
+  evts = evts.filter(e => !(e._myMember && e._myMember.status === 'pending_invite'));
+  if(currentDashFilter==='created') evts=evts.filter(e=>e._isOwner);
+  if(currentDashFilter==='joined') evts=evts.filter(e=>!e._isOwner);
+  const grid = document.getElementById('eventsGrid');
+  if(!evts.length){grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text3)"><div style="font-size:2.5rem;margin-bottom:12px">📭</div><p>沒有符合的活動資料</p></div>';return;}
+
+  grid.innerHTML = evts.map(e => {
+    const isOwner = e._isOwner;
+    const myMemberRoles = e._myMember?(Array.isArray(e._myMember.roles)?e._myMember.roles:(e._myMember.role?[e._myMember.role]:[])):[]; 
+    const primaryRole = myMemberRoles.includes('admin')?'admin':myMemberRoles.includes('counter')?'counter':myMemberRoles.length?'payer':null;
+    const myRole = isOwner?'發起人':(primaryRole?({admin:'管理員',counter:'統計者',payer:'成員'}[primaryRole]||'成員'):'成員');
+    const p=PC_getPayers(e),paid=p.filter(m=>m.status==='paid').length;
+    const c=PC_getCollected(e),ex=PC_getExpected(e);
+    const pct=ex>0?Math.min(100,Math.round(c/ex*100)):0;
+    const tc=e.status==='active'?'badge-green':'badge-gray';
+    const tt=e.status==='active'?'進行中':'已結束';
+    const code=e.inviteCode||'';
+    const reqs=[];// 申請數稍後用即時值
+    const isSel=selIds.has(e.id);
+    const canSelect=selMode&&isOwner;
+    const isBlocked=selMode&&!isOwner;
+    const oc=canSelect?`toggleCard('${e.id}',event)`:isBlocked?`event.preventDefault()`:`location.href='event.html?id=${e.id}'`;
+    const cardStyle=isBlocked?'cursor:not-allowed;opacity:0.6;':'';
+    const roleBadgeColor=isOwner?'badge-founder':primaryRole==='admin'?'badge-admin':primaryRole==='counter'?'badge-orange':'badge-blue';
+    const roleBadgeText=isOwner?'發起人':myRole;
+
+    // 繳費狀態
+    let myPayBadge='';
+    const myMemberData=isOwner?(e.members||[]).find(m=>m.email===user.email):e._myMember;
+    if(myMemberData){
+      const mr=Array.isArray(myMemberData.roles)?myMemberData.roles:(myMemberData.role?[myMemberData.role]:[]);
+      if(mr.includes('payer')){
+        const myExp=myMemberData.customAmount!=null?Number(myMemberData.customAmount):Number(e.amount||0);
+        if(myExp>0){const st=myMemberData.status;myPayBadge=st==='paid'?`<span class="badge badge-green" style="font-size:0.62rem">✓ 已繳費</span>`:st==='overdue'?`<span class="badge badge-red" style="font-size:0.62rem">⚠ 逾期未繳</span>`:`<span class="badge badge-orange" style="font-size:0.62rem">尚未繳費</span>`;}
+      }
+    }
+
+    return `<div class="event-card${isSel?' selected':''}" onclick="${oc}" style="${cardStyle}">
+      ${canSelect?`<div class="ec-check${isSel?' checked':''}">${isSel?'✓':''}</div>`:''}
+      <div class="ec-top" style="${canSelect?'padding-left:26px':''}">
+        <div class="ec-title">${e.title}</div>
+        <div>
+          <span class="badge ${roleBadgeColor}" style="font-size:0.6rem;margin-right:4px">${roleBadgeText}</span>
+          <span class="badge ${tc}">${tt}</span>${myPayBadge?` ${myPayBadge}`:''}
+        </div>
+      </div>
+      <div class="ec-meta" style="${canSelect?'padding-left:26px':''}"><span>👥 ${p.length} 人</span><span>📅 ${e.deadline}</span></div>
+      ${code&&isOwner?`<div class="ec-invite" onclick="copyInvite('${code}',event)"><span style="font-size:0.65rem;color:var(--accent);opacity:0.7">邀請碼</span><span class="ec-invite-code">${code}</span><span style="font-size:0.7rem;color:var(--accent);opacity:0.5">📋</span></div>`:''}
+      <div class="ec-revenue">
+        <div class="rev-box"><div class="rev-label">實收</div><div class="rev-val g">$${c.toLocaleString()}</div></div>
+        <div class="rev-box"><div class="rev-label">應收</div><div class="rev-val">$${ex.toLocaleString()}</div></div>
+      </div>
+      <div class="ec-foot"><span>${paid}/${p.length} 人已繳</span><span style="font-weight:700;color:${pct===100?'var(--green)':'var(--text2)'}">${pct}%</span></div>
+      <div class="progress-bar" style="margin-top:8px"><div class="progress-fill${pct===100?' green':''}" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+async function renderAll() { await Promise.all([renderStats(), renderEvents(), renderSidebar()]); }
+
+// ── 活動邀請 Modal ──
+document.getElementById('inviteListOverlay').addEventListener('click',function(e){if(e.target===this)closeInviteModal();});
+
+init();
+
+/*
+// 已移除繳費方式管理區塊 - 以下函數不再使用
+function savePayMethods(){
+  const methods = getPayMethods();
+  const chips = document.querySelectorAll('.method-chip');
+  const updated = methods.map((m, i) => {
+    if(chips[i]) return { ...m, active: chips[i].classList.contains('active') };
+    return m;
+  });
+  localStorage.setItem('pc_pay_methods__' + user.email, JSON.stringify(updated));
+  PC_toast('✅ 繳費方式已儲存');
+}
+
+// 已移除繳費方式管理區塊 - 以下函數不再使用
+function renderPayMethods(){
+  const methods = getPayMethods();
+  document.getElementById('methodsGrid').innerHTML = methods.map((m,i)=>`
+    <div class="method-chip${m.active?' active':''}" style="position:relative;padding-right:38px;">
+      <div style="display:flex;align-items:center;gap:8px;flex:1;" onclick="event.stopPropagation();toggleMethodActive(${i})">
+        <div class="method-icon">${m.icon}</div>
+        <div class="method-name">${m.name}</div>
+        <div class="method-toggle"></div>
+      </div>
+      <button onclick="event.stopPropagation();confirmDeleteMethod(${i})" style="position:absolute;right:8px;background:none;border:none;cursor:pointer;color:var(--text3);font-size:0.9rem;padding:4px;transition:color 0.15s;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text3)'">🗑</button>
+    </div>`).join('') + `<button class="add-method-btn" onclick="openAddMethod()">＋ 新增方式</button>`;
+}
+
+function toggleMethodActive(index){
+  const methods = getPayMethods();
+  methods[index].active = !methods[index].active;
+  localStorage.setItem('pc_pay_methods__'+user.email, JSON.stringify(methods));
+  renderPayMethods();
+}
+
+let deleteMethodIndex = -1;
+
+function confirmDeleteMethod(index){
+  const methods = getPayMethods();
+  deleteMethodIndex = index;
+  document.getElementById('deleteMethodName').textContent = methods[index].name;
+  document.getElementById('deleteMethodOverlay').classList.add('show');
+}
+
+function closeDeleteMethod(){
+  document.getElementById('deleteMethodOverlay').classList.remove('show');
+  deleteMethodIndex = -1;
+}
+
+function executeDeleteMethod(){
+  if(deleteMethodIndex < 0) return;
+  const methods = getPayMethods();
+  const deleted = methods[deleteMethodIndex];
+  methods.splice(deleteMethodIndex, 1);
+  localStorage.setItem('pc_pay_methods__'+user.email, JSON.stringify(methods));
+  closeDeleteMethod();
+  renderPayMethods();
+  PC_toast('🗑 已刪除「'+deleted.name+'」');
+}
+function openAddMethod(){ document.getElementById('addMethodOverlay').classList.add('show'); }
+function closeAddMethod(){ document.getElementById('addMethodOverlay').classList.remove('show'); }
+document.getElementById('delEvtOverlay').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
+document.getElementById('addMethodOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAddMethod();});
+document.getElementById('deleteMethodOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeDeleteMethod();});
+function addCustomMethod(){
+  const icon = document.getElementById('newMethodIcon').value.trim()||'💰';
+  const name = document.getElementById('newMethodName').value.trim();
+  if(!name){ PC_toast('請輸入繳費方式名稱'); return; }
+  const methods = getPayMethods();
+  methods.push({id:'custom_'+Date.now(), icon, name, active:true});
+  localStorage.setItem('pc_pay_methods__'+user.email, JSON.stringify(methods));
+  closeAddMethod();
+  document.getElementById('newMethodIcon').value='';
+  document.getElementById('newMethodName').value='';
+  renderPayMethods();
+  PC_toast('✅ 已新增「'+name+'」');
+}
+*/
+
+</script>
+</body></html>
